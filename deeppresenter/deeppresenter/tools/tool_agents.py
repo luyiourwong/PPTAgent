@@ -2,6 +2,8 @@ import base64
 from pathlib import Path
 
 import httpx
+from openai.types.chat import ChatCompletion
+
 from appcore import mcp
 from PIL import Image
 
@@ -20,15 +22,15 @@ async def image_generation(prompt: str, width: int, height: int, path: str) -> s
         path: Full path where the image should be saved
     """
 
-    response = await GLOBAL_CONFIG.t2i_model.generate_image(
+    response: ChatCompletion = await GLOBAL_CONFIG.t2i_model.generate_image(
         prompt=prompt, width=width, height=height
     )
 
     # The generated image will be in the assistant message
     image_url = None
-    response = response.choices[0].message
-    if response.images:
-        for image in response.images:
+    message = response.choices[0].message
+    if message.images:
+        for image in message.images:
             image_url = image['image_url']['url']  # Base64 data UR
 
     # Create directory if it doesn't exist

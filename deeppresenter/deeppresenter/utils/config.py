@@ -8,9 +8,7 @@ from typing import Any
 import json_repair
 import yaml
 from openai import AsyncOpenAI
-from openai.types import Completion
 from openai.types.chat import ChatCompletion
-from openai.types.images_response import ImagesResponse
 from pydantic import BaseModel, Field, PrivateAttr, ValidationError
 
 from deeppresenter.utils.constants import MIN_IMAGE_SIZE, PACKAGE_DIR, RETRY_TIMES
@@ -250,7 +248,7 @@ class LLM(BaseModel):
         width: int,
         height: int,
         retry_times: int = RETRY_TIMES,
-    ) -> Completion:
+    ) -> ChatCompletion:
         """Unified interface for image generation"""
         if MIN_IMAGE_SIZE is not None and (width * height) < int(MIN_IMAGE_SIZE):
             ratio = (int(MIN_IMAGE_SIZE) / (width * height)) ** 0.5
@@ -262,7 +260,7 @@ class LLM(BaseModel):
             for retry_idx in range(retry_times):
                 await asyncio.sleep(retry_idx)
                 try:
-                    return await self._client.completions.create(
+                    return await self._client.chat.completions.create(
                         model=self.model,
                         messages=[
                             {
