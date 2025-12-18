@@ -2,6 +2,7 @@ import sys
 import time
 import uuid
 from datetime import datetime
+from pathlib import Path
 
 import gradio as gr
 from platformdirs import user_cache_dir
@@ -219,6 +220,21 @@ class ChatDemo:
                             "",
                             gr.update(value=None),
                             gr.update(value=yield_msg),
+                        )
+
+                    elif isinstance(yield_msg, (Path, type(Path()))):
+                        # 處理 Path 對象 (PosixPath/WindowsPath)
+                        logger.info(f"Received Path object from finalize: {yield_msg}")
+                        file_path = str(yield_msg)
+                        file_content = "📄 幻灯片生成完成,点击下方按钮下载文件"
+                        aggregated_parts.append(file_content)
+                        aggregated_text = "\n\n".join(aggregated_parts).strip()
+                        history[-1]["content"] = aggregated_text
+                        yield (
+                            history,
+                            "",
+                            gr.update(value=None),
+                            gr.update(value=file_path),
                         )
 
                     elif isinstance(yield_msg, ChatMessage):
