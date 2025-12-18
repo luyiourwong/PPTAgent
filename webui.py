@@ -257,8 +257,23 @@ class ChatDemo:
                         )
 
                     else:
-                        raise ValueError(
-                            f"Unsupported response message type: {type(yield_msg)}"
+                        # 记录预期外的消息类型
+                        logger.warning(
+                            f"Unsupported response message type: {type(yield_msg).__name__}, "
+                            f"content: {yield_msg!r}, "
+                            f"attributes: {dir(yield_msg)}"
+                        )
+                        # 显示警告信息给用户,但不中断流程
+                        warning_msg = f"⚠️ 收到未知类型消息: {type(yield_msg).__name__}"
+                        aggregated_parts.append(warning_msg)
+                        aggregated_text = "\n\n".join(aggregated_parts).strip()
+                        history[-1]["content"] = aggregated_text
+
+                        yield (
+                            history,
+                            message,
+                            gr.update(value=None),
+                            gr.update(),
                         )
 
             msg_input.submit(
