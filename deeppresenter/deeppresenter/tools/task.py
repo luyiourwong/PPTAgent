@@ -175,7 +175,7 @@ def finalize(
     if LOCAL_TODO_CSV_PATH.exists():
         LOCAL_TODO_CSV_PATH.unlink()
 
-    return str(path.resolve())
+    return outcome
 
 
 if __name__ == "__main__":
