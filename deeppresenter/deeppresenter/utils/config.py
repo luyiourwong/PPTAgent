@@ -191,7 +191,7 @@ class LLM(BaseModel):
                     message.content = response_format(
                         **get_json_from_response(message.content)
                     ).model_dump_json(indent=2)
-                assert tools is None or len(message.tool_calls), (
+                assert tools is None or message.tool_calls is None or len(message.tool_calls), (
                     "No tool call returned from the model"
                 )
                 assert message.tool_calls or message.content, (
