@@ -8,6 +8,7 @@ from typing import Any
 import json_repair
 import yaml
 from openai import AsyncOpenAI
+from openai.types import Completion
 from openai.types.chat import ChatCompletion
 from openai.types.images_response import ImagesResponse
 from pydantic import BaseModel, Field, PrivateAttr, ValidationError
@@ -249,7 +250,7 @@ class LLM(BaseModel):
         width: int,
         height: int,
         retry_times: int = RETRY_TIMES,
-    ) -> ImagesResponse:
+    ) -> Completion:
         """Unified interface for image generation"""
         if MIN_IMAGE_SIZE is not None and (width * height) < int(MIN_IMAGE_SIZE):
             ratio = (int(MIN_IMAGE_SIZE) / (width * height)) ** 0.5
@@ -261,11 +262,15 @@ class LLM(BaseModel):
             for retry_idx in range(retry_times):
                 await asyncio.sleep(retry_idx)
                 try:
-                    return await self._client.images.generate(
-                        prompt=prompt,
+                    return await self._client.completions.create(
                         model=self.model,
-                        size=f"{width}x{height}",
-                        **self.sampling_parameters,
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": prompt
+                            }
+                        ],
+                        extra_body={"modalities": ["image", "text"]}
                     )
                 except Exception as e:
                     logging_openai_exceptions(self.model, e)

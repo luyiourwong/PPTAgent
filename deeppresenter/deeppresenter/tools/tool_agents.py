@@ -24,20 +24,28 @@ async def image_generation(prompt: str, width: int, height: int, path: str) -> s
         prompt=prompt, width=width, height=height
     )
 
-    image_b64 = response.data[0].b64_json
-    image_url = response.data[0].url
+    # The generated image will be in the assistant message
+    image_url = None
+    response = response.choices[0].message
+    if response.images:
+        for image in response.images:
+            image_url = image['image_url']['url']  # Base64 data UR
 
     # Create directory if it doesn't exist
     Path(path).parent.mkdir(parents=True, exist_ok=True)
 
-    if image_b64:
-        # Decode base64 image data
-        image_bytes = base64.b64decode(image_b64)
-    elif image_url:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(image_url)
-            response.raise_for_status()
-            image_bytes = response.content
+    if image_url:
+        # Check if it's a base64 data URL
+        if image_url.startswith('data:'):
+            # Extract base64 data from data URL
+            header, encoded = image_url.split(',', 1)
+            image_bytes = base64.b64decode(encoded)
+        else:
+            # It's a regular HTTP URL
+            async with httpx.AsyncClient() as client:
+                http_response = await client.get(image_url)
+                http_response.raise_for_status()
+                image_bytes = http_response.content
     else:
         raise ValueError("Empty Response")
 
