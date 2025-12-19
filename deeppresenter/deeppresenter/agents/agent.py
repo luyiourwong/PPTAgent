@@ -87,24 +87,27 @@ class Agent:
                 role_config.exclude_tools.append("inspect_slide")
 
         if role_config.include_tool_servers == "all":
-            role_config.include_tool_servers = list(agent_env._server_tools)
-        for server in (
-            role_config.include_tool_servers + role_config.exclude_tool_servers
-        ):
-            assert server in agent_env._server_tools, (
-                f"Server {server} is not available"
-            )
-        for tool in role_config.include_tools + role_config.exclude_tools:
-            assert tool in agent_env._tools_dict, f"Tool {tool} is not available"
-        self.tools = []
+            role_config.include_tool_servers = list(agent_env._server_tools.keys())
+
+        # 1. 收集所有來自 server 的工具
+        target_tools = set()
         for server in role_config.include_tool_servers:
-            if server not in role_config.exclude_tool_servers:
-                for tool in agent_env._server_tools[server]:
-                    if tool not in role_config.exclude_tools:
-                        self.tools.append(agent_env._tools_dict[tool])
-        for tool_name, tool in agent_env._tools_dict.items():
-            if tool_name in role_config.include_tools:
-                self.tools.append(tool)
+            if server in agent_env._server_tools and server not in role_config.exclude_tool_servers:
+                target_tools.update(agent_env._server_tools[server])
+
+        # 2. 加入直接指定的工具，並套用排除名單
+        target_tools.update(role_config.include_tools)
+        final_tool_names = target_tools - set(role_config.exclude_tools)
+
+        # 3. 統一轉換為工具對象
+        self.tools = []
+        for tool_name in final_tool_names:
+            if tool_name in agent_env._tools_dict:
+                self.tools.append(agent_env._tools_dict[tool_name])
+            else:
+                # 只有真正需要用到卻找不到時才報錯
+                raise ValueError(f"Tool {tool_name} is not available")
+
         if language not in role_config.system:
             raise ValueError(f"Language '{language}' not found in system prompts")
         self.system = role_config.system[language]
